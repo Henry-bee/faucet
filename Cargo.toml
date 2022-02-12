@@ -1,7 +1,7 @@
 [workspace]
 members = [
     'node',
-    'pallets/template',
+    'pallets/faucet',
     'runtime',
 ]
 [profile.release]

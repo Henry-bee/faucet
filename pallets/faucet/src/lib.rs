@@ -38,7 +38,7 @@ pub mod pallet {
 	/// A map of claimed amount per account.
 	#[pallet::storage]
 	#[pallet::getter(fn drip_map)]
-	pub type DripMap<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, Vec<BalanceOf<T>>>;
+	pub type DripMap<T: Config> = StorageMap<_, Twox64Concat, T::AccountId, BalanceOf<T>>;
 
 	// Pallets use events to inform users when important changes are made.
 	// https://docs.substrate.io/v3/runtime/events-and-errors
@@ -54,6 +54,8 @@ pub mod pallet {
 	pub enum Error<T> {
 		/// Account has already collect from faucet
 		DripExceeded,
+		// Exceeded Maximum Drip amount
+		MaxDripAmountExceeded
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
@@ -77,10 +79,14 @@ pub mod pallet {
 				return Err(Error::<T>::DripExceeded)?;
 			}
 
+			// Exit early if amount exceeded drip limit
+			if amount > T::MaxDripAmount::get() {
+				return Err(Error::<T>::MaxDripAmountExceeded)?;
+			}
+
 			<DripMap<T>>::insert(&who, amount);
 
-			let imbalance = T::Currency::deposit_creating(&who, amount);
-			// drop(imbalance);
+			T::Currency::deposit_creating(&who, amount);
 
 			// Emit an event.
 			Self::deposit_event(Event::Dripped(who, amount));

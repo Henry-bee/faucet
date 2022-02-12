@@ -10,7 +10,7 @@ fn test_drip() {
 		let amount = 100000u64;
 		let initial_supply = Balances::total_issuance();
 
-		let res = TemplateModule::drip(account.clone(), amount);
+		let res = Faucet::drip(account.clone(), amount);
 		assert!(res.is_ok());
 
 		let post_drip_balance = AccountStore::get(&1).free;
@@ -20,10 +20,22 @@ fn test_drip() {
 
 		assert!(System::events()
 			.iter()
-			.any(|er| er.event == TestEvent::TemplateModule(Event::Dripped(1, amount))));
+			.any(|er| er.event == TestEvent::Faucet(Event::Dripped(1, amount))));
 
 		// Dispatch another drip extrinsic for Account 1.
-		let next_res = TemplateModule::drip(account, 10000);
+		let next_res = Faucet::drip(account, 10000);
 		assert_noop!(next_res, Error::<Test>::DripExceeded);
+	});
+}
+
+#[test]
+fn test_drip_amount_exceeded() {
+	new_test_ext().execute_with(|| {
+		let account_1 = Origin::signed(1);
+
+		// Attempt to drip more than 10_000_001 tokens
+		let res = Faucet::drip(account_1.clone(), 10_000_001);
+		assert_eq!(res.is_err(), true);
+		assert_noop!(res, Error::<Test>::MaxDripAmountExceeded);
 	});
 }
